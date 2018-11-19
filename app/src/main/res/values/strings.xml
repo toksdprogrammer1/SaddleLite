@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Saddle Lite</string>
+    <string name="title_sales"> </string>
+    <string name="amount_hint">Enter amount</string>
+    <string name="pay">Pay with card</string>
+    <string name="cash">Pay with cash</string>
+    <string name="complete">Complete</string>
+    <string name="receipt">Print Receipt</string>
+    <string name="select_bluetooth_device">Select bluetooth device</string>
+    <string name="terminal_selection_hint">Please select an outPOSt device based on its serial number and ensure it is turned on.</string>
+    <string name="cancel">Cancel</string>
+    <string name="bt_permission_denied">Bluetooth Permission denied</string>
+</resources>

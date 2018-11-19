@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="20dp"
+    android:background="@color/bg">
+
+   <!-- <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/amount_et"
+        android:hint="@string/amount_hint"
+        android:layout_margin="20dp"
+        android:inputType="numberDecimal"
+        android:maxLines="1"
+        style="@style/TextAppearance.AppCompat.Display1"
+        android:lines="1"/>-->
+
+
+    <LinearLayout
+        android:id="@+id/layout"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:padding="50dp"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/amount_et"
+            style="@style/TextAppearance.AppCompat.Display1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:textSize="70sp" />
+
+
+        <View
+            android:layout_width="fill_parent"
+            android:layout_height="50px"
+            android:background="@color/bg" />
+
+        <Button
+        android:id="@+id/sales_continue_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_gravity="center"
+
+        android:background="@drawable/card"
+        android:drawableLeft="@drawable/card_icon"
+        android:drawablePadding="2dip"
+        android:gravity="center"
+
+        android:singleLine="true"
+        android:text="@string/pay"
+        android:textColor="@color/colorPrimaryDark" />
+
+        <View
+            android:layout_width="fill_parent"
+            android:layout_height="50px"
+            android:background="@color/bg" />
+
+    <Button
+        android:id="@+id/sales_cash_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_gravity="center"
+
+        android:background="@drawable/cash"
+        android:drawableLeft="@drawable/cash_icon"
+        android:drawablePadding="2dip"
+        android:gravity="center"
+
+        android:singleLine="true"
+        android:text="@string/cash"
+        android:textColor="@color/colorPrimaryDark" />
+
+    </LinearLayout>
+<!--    <Button
+        android:id="@+id/sales_back_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="63dp"
+        android:background="@color/colorPrimary"
+        android:text="@string/back"
+        android:textColor="@android:color/white" />-->
+
+    <ViewStub
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/vsHeader"
+        android:inflatedId="@+id/inflatedview"
+        android:layout="@layout/loading"/>
+
+
+</RelativeLayout>
