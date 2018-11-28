@@ -3,10 +3,18 @@ package com.netpluspay.saddlelite.fragments;
 import com.netpluspay.saddlelite.R;
 import com.netpluspay.saddlelite.activities.PaymentProgressActivity;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -26,12 +34,20 @@ import org.json.JSONObject;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import com.netpluspay.saddlelite.database.DatabaseHelper;
+import com.netpluspay.saddlelite.database.model.Cash;
+import com.netpluspay.saddlelite.service.CallEndpointService;
+import com.netpluspay.saddlelite.service.CallEndpointServiceForFailed;
+import com.netpluspay.saddlelite.utils.LogTransactionOnServer;
+
+import static android.content.Context.JOB_SCHEDULER_SERVICE;
 
 public class SaleFragment extends Fragment {
 
@@ -48,7 +64,10 @@ public class SaleFragment extends Fragment {
     private static String orderNo = "";
     private static String narrative = "";
     private static String email = "";
+    private static String password = "";
     private static String merchantID = "";
+    private DatabaseHelper db;
+    private LogTransactionOnServer logTransactionOnServer;
     public static SaleFragment newInstance(){
         return new SaleFragment();
     }
@@ -62,11 +81,14 @@ public class SaleFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+        db = new DatabaseHelper(getActivity());
         amount = getArguments().getString("amount");
         orderNo = getArguments().getString("orderNo");
         narrative = getArguments().getString("narrative");
         email = getArguments().getString("email");
+        password = getArguments().getString("password");
         merchantID = getArguments().getString("merchantID");
+
         View view = inflater.inflate(R.layout.fragment_sales, container, false);
         ButterKnife.bind(this, view);
         return view;
@@ -108,6 +130,9 @@ public class SaleFragment extends Fragment {
     private void proceedToPayment(double amount) {
         Bundle bundle = new Bundle();
         bundle.putDouble(PaymentProgressActivity.KEY_AMOUNT, amount);
+        bundle.putString(PaymentProgressActivity.KEY_EMAIL, email);
+        bundle.putString(PaymentProgressActivity.KEY_PASSWORD, password);
+        bundle.putString(PaymentProgressActivity.KEY_ORDER_NO, orderNo);
         Intent i = new Intent(getActivity(), PaymentProgressActivity.class);
         i.putExtras(bundle);
         getActivity().startActivityForResult(i, REQUEST_CODE);
@@ -115,9 +140,94 @@ public class SaleFragment extends Fragment {
     }
 
     private void payCash() {
-        new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
+
+        if (isNetworkConnected()) {
+            new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
+        }
+        else {
+            db.insertCash(orderNo, amount, narrative, email, merchantID, "PENDING");
+            Log.d("Db Size", db.getPendingCash().size() + "");
+
+            SharedPreferences preferences = PreferenceManager.
+                    getDefaultSharedPreferences(getActivity());
+
+            if (!preferences.getBoolean("firstRunComplete", false)) {
+                //schedule the job only once.
+                scheduleJobCallEndpoint();
+
+                //update shared preference
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("firstRunComplete", true);
+                editor.commit();
+            }
+
+            if (!preferences.getBoolean("secondRunComplete", false)) {
+                //schedule the job only once.
+                schedulePendingJobCallEndpoint();
+
+                //update shared preference
+                SharedPreferences.Editor editor2 = preferences.edit();
+                editor2.putBoolean("secondRunComplete", true);
+                editor2.commit();
+            }
+
+            Intent intent = new Intent();
+            intent.putExtra("status", "SUCCESS");
+            intent.putExtra("transactionId", orderNo);
+            intent.putExtra("amount", amount);
+            passData(intent, -1);
+        }
     }
 
+    private void scheduleJobCallEndpoint(){
+        JobScheduler jobScheduler = (JobScheduler)getActivity().getSystemService(JOB_SCHEDULER_SERVICE);
+
+        ComponentName componentName = new ComponentName(getActivity().getPackageName(),
+                CallEndpointService.class.getName());
+
+        JobInfo jobInfo = new JobInfo.Builder(1, componentName)
+                .setRequiredNetworkType(
+                        JobInfo.NETWORK_TYPE_ANY)
+                //.setBackoffCriteria(3000, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
+                .setPersisted(true).build();
+        jobScheduler.schedule(jobInfo);
+    }
+
+    private void schedulePendingJobCallEndpoint(){
+        JobScheduler jobScheduler = (JobScheduler)getActivity().getSystemService(JOB_SCHEDULER_SERVICE);
+
+        ComponentName componentName = new ComponentName(getActivity().getPackageName(),
+                CallEndpointServiceForFailed.class.getName());
+
+        JobInfo jobInfo = new JobInfo.Builder(2, componentName)
+                .setRequiredNetworkType(
+                        JobInfo.NETWORK_TYPE_ANY)
+                .setPeriodic(900000)
+                .setPersisted(true).build();
+        jobScheduler.schedule(jobInfo);
+    }
+
+    public boolean isNetworkConnected() {
+
+        ConnectivityManager cm = (ConnectivityManager)getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean isInternetAvailable() {
+        try {
+            InetAddress ipAddr = InetAddress.getByName("google.com");
+            //You can replace it with your name
+            return !ipAddr.equals("");
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     @Override
     public void onResume() {
@@ -228,6 +338,7 @@ public class SaleFragment extends Fragment {
                                 intent.putExtra("transactionId", order);
                                 intent.putExtra("amount", amount);
                                 //intent.putExtra("exception", value);
+                                //db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
                                 break; // Break out of the loop
                             }
                             if (key.equalsIgnoreCase("status")) { // Check if desired key
@@ -238,6 +349,7 @@ public class SaleFragment extends Fragment {
                                     intent.putExtra("status", "Failed");
                                     intent.putExtra("transactionId", order);
                                     intent.putExtra("amount", amount);
+                                   // db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
                                     break; // Break out of the loop
                                 }
                                 intent.putExtra("status", value);
@@ -267,11 +379,12 @@ public class SaleFragment extends Fragment {
 
                 }
                 catch (Exception e){
-
+                    db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
                     Log.d("Error", e.getMessage());
 
                 }
             }catch(Exception e){ // Catch the download exception
+                db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
                 e.printStackTrace();
             }
             return intent;
@@ -288,9 +401,14 @@ public class SaleFragment extends Fragment {
             stub.setVisibility(View.GONE);
             cashBtn.setVisibility(View.VISIBLE);
             payBtn.setVisibility(View.VISIBLE);
-            if (result == -1)
+            if (result == -1) {
                 passData(intent, -1);
+                db.insertCash(orderNo, amount, narrative, email, merchantID, "SUCCESS");
+                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "SUCCESS", 0);
+                logTransactionOnServer.logCashTransaction();
+            }
             else
+                db.insertCash(orderNo, amount, narrative, email, merchantID, "PENDING");
                 passData(intent, 1);
         }
     }

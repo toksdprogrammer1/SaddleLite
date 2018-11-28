@@ -3,6 +3,7 @@ package com.netpluspay.saddlelite.activities;
 import com.netpluspay.saddlelite.R;
 import com.netpluspay.saddlelite.fragments.BluetoothDialogFragment;
 import com.netpluspay.saddlelite.fragments.TerminalDialogFragment;
+import com.netpluspay.saddlelite.utils.LogTransactionOnServer;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -41,16 +42,24 @@ public class PaymentProgressActivity extends AppCompatActivity {
 
     public static final String LOG_TAG = "Payment";
     public static final String KEY_AMOUNT = "amount";
+    public static final String KEY_ORDER_NO = "orderNo";
+    public static final String KEY_EMAIL = "email";
+    public static final String KEY_PASSWORD = "password";
     private static final String BLUETOOTH_FRAGMENT_TAG = "bluetooth";
+    public int transactionFinished = 0;
 
     @Bind(R.id.amount_tv) TextView amountTv;
     @Bind(R.id.progress_tv) TextView progressTv;
     @Bind(R.id.back_btn) Button backBtn;
     @Bind(R.id.receipt_btn) Button receiptBtn;
     double amount;
+    String orderNo;
+    String email;
+    String password;
     ServiceManager mServiceManager;
     public  Transaction transaction = null;
     public SpTransactionException exception = null;
+    private LogTransactionOnServer logTransactionOnServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +73,9 @@ public class PaymentProgressActivity extends AppCompatActivity {
         mServiceManager = ServiceManager.get(PaymentProgressActivity.this);
 
         amount = getIntent().getExtras().getDouble(KEY_AMOUNT);
+        email = getIntent().getExtras().getString(KEY_EMAIL);
+        password = getIntent().getExtras().getString(KEY_PASSWORD);
+        orderNo = getIntent().getExtras().getString(KEY_ORDER_NO);
         amountTv.setText("Amount: "+amount);
         progressTv.setText("Enabling blueetooth..");
 
@@ -84,6 +96,10 @@ public class PaymentProgressActivity extends AppCompatActivity {
             @Override
             public void onScanTimeout() {
 
+                Intent intent = new Intent();
+                //intent.putExtra("status", "FAILED");
+                setResult(RESULT_CANCELED, intent);
+                finish();
             }
 
             @Override
@@ -94,6 +110,10 @@ public class PaymentProgressActivity extends AppCompatActivity {
             @Override
             public void onBluetoothPermissionDenied(String[] strings) {
 
+                Intent intent = new Intent();
+                //intent.putExtra("status", "FAILED");
+                setResult(RESULT_CANCELED, intent);
+                finish();
             }
 
         });
@@ -130,7 +150,18 @@ public class PaymentProgressActivity extends AppCompatActivity {
 
             @Override
             public void onDeviceDisconnected(SpTerminal spTerminal) {
-
+                if (transactionFinished == 0) {
+                    Intent intent = new Intent();
+                    intent.putExtra("status", "FAILED");
+                    setResult(RESULT_CANCELED, intent);
+                    finish();
+                }
+                else if (transactionFinished == 2) {
+                    Intent intent = new Intent();
+                    //intent.putExtra("status", "FAILED");
+                    setResult(RESULT_CANCELED, intent);
+                    finish();
+                }
             }
 
             @Override
@@ -192,7 +223,10 @@ public class PaymentProgressActivity extends AppCompatActivity {
             public void onTransactionFinished(SmartPesa.TransactionType transactionType, boolean isSuccess, @Nullable Transaction transaction2, @Nullable SmartPesa.Verification verification, @Nullable SpTransactionException exception2) {
                 transaction = transaction2;
                 exception = exception2;
+                transactionFinished = 1;
                 if(isSuccess) {
+                    logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount+"", "SUCCESS", 1);
+                    logTransactionOnServer.logCashTransaction();
                     progressTv.setText("Transaction success");
                     receiptBtn.setVisibility(View.VISIBLE);
                     backBtn.setVisibility(View.VISIBLE);
@@ -256,15 +290,15 @@ public class PaymentProgressActivity extends AppCompatActivity {
                         public void onClick(View v) {
                             Intent intent = new Intent();
                             //intent.putExtra("amount", amount);
-                            intent.putExtra("cardHolderName", transaction.getTransactionResult().getCardHolderName());
-                            intent.putExtra("cardBrand", transaction.getTransactionResult().getCardBrand());
-                            intent.putExtra("cardNumber", transaction.getTransactionResult().getCardNumber());
-                            intent.putExtra("transactionReference", transaction.getTransactionResult().getTransactionReference());
-                            intent.putExtra("transactionId", "Card Transaction");
-                            intent.putExtra("transactionDateTime", transaction.getTransactionResult().getTransactionDatetime().toString());
-                            intent.putExtra("currency", transaction.getTransactionResult().getCurrencyName());
-                            intent.putExtra("responseCode", transaction.getTransactionResult().getResponseCode());
-                            intent.putExtra("responseDescription", transaction.getTransactionResult().getResponseDescription());
+//                            intent.putExtra("cardHolderName", transaction.getTransactionResult().getCardHolderName());
+//                            intent.putExtra("cardBrand", transaction.getTransactionResult().getCardBrand());
+//                            intent.putExtra("cardNumber", transaction.getTransactionResult().getCardNumber());
+//                            intent.putExtra("transactionReference", transaction.getTransactionResult().getTransactionReference());
+//                            intent.putExtra("transactionId", "Card Transaction");
+//                            intent.putExtra("transactionDateTime", transaction.getTransactionResult().getTransactionDatetime().toString());
+//                            intent.putExtra("currency", transaction.getTransactionResult().getCurrencyName());
+//                            intent.putExtra("responseCode", transaction.getTransactionResult().getResponseCode());
+//                            intent.putExtra("responseDescription", transaction.getTransactionResult().getResponseDescription());
                             intent.putExtra("exception", exception.getMessage());
                             intent.putExtra("status", "FAILED");
                             setResult(RESULT_CANCELED, intent);
@@ -275,15 +309,19 @@ public class PaymentProgressActivity extends AppCompatActivity {
                 }
             }
 
+
+
             @Override
             public void onError(SpException exception) {
+                transactionFinished = 2;
                 progressTv.setText(exception.getMessage());
-                SystemClock.sleep(500000);
-                /*Intent intent = new Intent();
-                intent.putExtra("error", exception.getMessage());
+                //SystemClock.sleep(500000);
+                Intent intent = new Intent();
+                //intent.putExtra("exception", exception.getMessage());
+                //intent.putExtra("status", "FAILED");
                 setResult(RESULT_CANCELED, intent);
                 finish();
-                Log.d(LOG_TAG, "I got here for erroe");*/
+                //Log.d(LOG_TAG, "I got here for erroe");
             }
 
 

@@ -7,4 +7,10 @@
     <color name="white">#ffffff</color>
     <color name="storm_shade">#0a5a7a</color>
     <color name="bg">#f5f5f5</color>
+
+
+    <color name="msg_no_notes">#999</color>
+    <color name="hint_enter_note">#89c3c3c3</color>
+    <color name="timestamp">#858585</color>
+    <color name="note_list_text">#232323</color>
 </resources>

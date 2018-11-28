@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.netpluspay.saddlelite"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 27
         versionCode 1
         versionName "1.0"
@@ -39,6 +39,7 @@ dependencies {
     compile('com.mikepenz:materialdrawer:5.0.0@aar') {
         transitive = true
     }
+    compile 'com.android.support:recyclerview-v7:27.0.2'
     compile('com.smartpesa:sdk:3.2.9') {
         transitive = true
         changing = true

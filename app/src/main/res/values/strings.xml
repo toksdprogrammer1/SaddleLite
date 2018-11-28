@@ -10,4 +10,9 @@
     <string name="terminal_selection_hint">Please select an outPOSt device based on its serial number and ensure it is turned on.</string>
     <string name="cancel">Cancel</string>
     <string name="bt_permission_denied">Bluetooth Permission denied</string>
+    <string name="job_service_notification">Transaction Notification</string>
+    <string name="notification_channel_description">notification_channel_description</string>
+    <string name="job_service">Payment Successfull</string>
+    <string name="job_running">job_running</string>
+    <string name="msg_no_notes">No record!</string>
 </resources>

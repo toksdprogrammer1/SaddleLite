@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.netpluspay.saddlelite"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.netpluspay.saddlelite">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -15,31 +18,40 @@
         android:supportsRtl="true"
         android:theme="@style/SmartPesaTheme">
         <activity
-            android:name="com.netpluspay.saddlelite.activities.MainActivity"
+            android:name=".activities.MainActivity"
             android:label="Main Activity"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="com.smartpesa.netpluspay.MainActivity" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
         <activity
-            android:name="com.netpluspay.saddlelite.activities.SplashActivity"
+            android:name=".activities.SplashActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
         <activity
-            android:name="com.netpluspay.saddlelite.activities.LoginActivity"
+            android:name=".activities.LoginActivity"
             android:label="Login Activity"
             android:screenOrientation="portrait" />
-        <activity android:name="com.netpluspay.saddlelite.activities.PaymentProgressActivity"></activity>
+        <activity
+            android:name=".activities.CashActivity"
+            android:label=""
+            android:screenOrientation="portrait" />
+        <activity android:name=".activities.PaymentProgressActivity" />
 
-
+        <service
+            android:name=".service.CallEndpointService"
+            android:permission="android.permission.BIND_JOB_SERVICE"></service>
+        <service
+            android:name=".service.CallEndpointServiceForFailed"
+            android:permission="android.permission.BIND_JOB_SERVICE"></service>
     </application>
 
 </manifest>

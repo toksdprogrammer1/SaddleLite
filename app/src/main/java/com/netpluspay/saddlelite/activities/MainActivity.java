@@ -10,9 +10,11 @@ import com.netpluspay.saddlelite.fragments.SaleFragment;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -35,6 +37,8 @@ import smartpesa.sdk.models.operator.LogoutCallback;
 import smartpesa.sdk.models.version.GetVersionCallback;
 import smartpesa.sdk.models.version.Version;
 
+
+
 public class MainActivity extends AppCompatActivity implements SaleFragment.OnDataPass {
 
     public static final String LOG_TAG = "MainActivity";
@@ -46,7 +50,9 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
     private static String orderNo = "";
     private static String narrative = "";
     private static String email = "";
+    private static String password = "";
     private static String merchantID = "";
+
     @Bind(R.id.toolbar) Toolbar mToolbar;
 
     Drawer drawer;
@@ -64,8 +70,10 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
         orderNo = myIntent.getStringExtra("orderNo");
         narrative = myIntent.getStringExtra("narrative");
         email = myIntent.getStringExtra("email");
+        password = myIntent.getStringExtra("password");
         merchantID = myIntent.getStringExtra("merchantID");
 
+        saveLogin(email, password);
         //initialise SmartPesa ServiceManager
         ServiceManagerConfig config = ServiceManagerConfig.newBuilder(getApplicationContext())
                 .endPoint("netplus.prod.smartpesa.com")
@@ -133,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
             bundle.putString("orderNo", orderNo);
             bundle.putString("narrative", narrative);
             bundle.putString("email", email);
+            bundle.putString("password", password);
             bundle.putString("merchantID", merchantID);
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragment.setArguments(bundle);
@@ -201,7 +210,19 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
         }
     }
 
+    private void saveLogin(String email, String password){
+        SharedPreferences preferences = PreferenceManager.
+                getDefaultSharedPreferences(this);
 
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("email", email);
+        editor.commit();
+
+        SharedPreferences.Editor editor2 = preferences.edit();
+        editor2.putString("password", password);
+        editor2.commit();
+
+    }
 
     //check for permissions in android Marshmallow
     private void checkAndroidPermissions() {
