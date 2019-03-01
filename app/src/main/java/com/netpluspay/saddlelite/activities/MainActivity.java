@@ -27,24 +27,26 @@ import android.util.Log;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import okhttp3.HttpUrl;
 import smartpesa.sdk.ServiceManager;
 import smartpesa.sdk.ServiceManagerConfig;
-import smartpesa.sdk.error.SpException;
+import smartpesa.sdk.core.error.SpException;
 import smartpesa.sdk.error.SpSessionException;
+import smartpesa.sdk.log.SpLogLevel;
 import smartpesa.sdk.models.merchant.VerifiedMerchantInfo;
 import smartpesa.sdk.models.merchant.VerifyMerchantCallback;
 import smartpesa.sdk.models.operator.LogoutCallback;
 import smartpesa.sdk.models.version.GetVersionCallback;
 import smartpesa.sdk.models.version.Version;
-
+import smartpesa.sdk.network.NetworkSettings;
 
 
 public class MainActivity extends AppCompatActivity implements SaleFragment.OnDataPass {
 
     public static final String LOG_TAG = "MainActivity";
     private static final int REQUEST_CODE = 100;
-    private static final long MENU_LOGOUT = 2;
-    private static final long MENU_SALE = 1;
+    private static final int MENU_LOGOUT = 2;
+    private static final int MENU_SALE = 1;
     private static final int REQUEST_PERMISSION = 232;
     private static String amount = "";
     private static String orderNo = "";
@@ -75,9 +77,14 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
 
         saveLogin(email, password);
         //initialise SmartPesa ServiceManager
-        ServiceManagerConfig config = ServiceManagerConfig.newBuilder(getApplicationContext())
-                .endPoint("netplus.prod.smartpesa.com")
-                .withoutSsl()
+        ServiceManagerConfig config = new ServiceManagerConfig.Builder(getApplicationContext())
+                .logLevel(SpLogLevel.DEBUG)
+                .networkSettings(new NetworkSettings.Builder()
+                        .url(new HttpUrl.Builder()
+                .host("netplus.prod.smartpesa.com")
+                                .scheme("http")
+                                .build())
+                        .build())
                 .build();
         ServiceManager.init(config);
 

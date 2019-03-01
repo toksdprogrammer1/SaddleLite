@@ -195,6 +195,11 @@ public class CallEndpointService extends JobService {
 
                         while (jsonReader.hasNext()) { // Loop through all keys
                             String key = jsonReader.nextName(); // Fetch the next key
+                            if (key.equalsIgnoreCase("status_code")) { // Check if desired key
+
+                                status = "UNKNOWN";
+                                break; // Break out of the loop
+                            }
                             if (key.equalsIgnoreCase("error")) { // Check if desired key
                                 // Fetch the value as a String
                                 //String value = jsonReader.nextString();
@@ -245,6 +250,12 @@ public class CallEndpointService extends JobService {
                 cash.setStatus("SUCCESS");
                 db.updateCash(cash);
                 logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "SUCCESS", 0);
+                logTransactionOnServer.logCashTransaction();
+            }
+            else if (status.equalsIgnoreCase("UNKNOWN")){
+                cash.setStatus("FAILED");
+                db.updateCash(cash);
+                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "FAILED", 0);
                 logTransactionOnServer.logCashTransaction();
             }
             else {

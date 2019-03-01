@@ -19,14 +19,17 @@ import android.widget.Toast;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import okhttp3.HttpUrl;
 import smartpesa.sdk.ServiceManager;
 import smartpesa.sdk.ServiceManagerConfig;
-import smartpesa.sdk.error.SpException;
+import smartpesa.sdk.core.error.SpException;
 import smartpesa.sdk.error.SpSessionException;
+import smartpesa.sdk.log.SpLogLevel;
 import smartpesa.sdk.models.merchant.VerifiedMerchantInfo;
 import smartpesa.sdk.models.merchant.VerifyMerchantCallback;
 import smartpesa.sdk.models.version.GetVersionCallback;
 import smartpesa.sdk.models.version.Version;
+import smartpesa.sdk.network.NetworkSettings;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -46,9 +49,14 @@ public class SplashActivity extends AppCompatActivity {
         amount = myIntent.getStringExtra("amount");
 
         //initialise SmartPesa ServiceManager
-        ServiceManagerConfig config = ServiceManagerConfig.newBuilder(getApplicationContext())
-                .endPoint("netplus.prod.smartpesa.com")
-                .withoutSsl()
+        ServiceManagerConfig config = new ServiceManagerConfig.Builder(getApplicationContext())
+                .logLevel(SpLogLevel.DEBUG)
+                .networkSettings(new NetworkSettings.Builder()
+                        .url(new HttpUrl.Builder()
+                                .host("netplus.prod.smartpesa.com")
+                                .scheme("http")
+                                .build())
+                        .build())
                 .build();
         ServiceManager.init(config);
 
@@ -160,7 +168,7 @@ public class SplashActivity extends AppCompatActivity {
     private void showLoginActivity() {
         //startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         //finish();
-        performVerifyMerchant("webmall", "100", "1234");
+        performVerifyMerchant("SEVENUP", "100", "1000");
     }
 
     private void performVerifyMerchant(String merchantCode, String operatorCode, String operatorPin) {

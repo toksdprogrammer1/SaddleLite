@@ -6,6 +6,7 @@
     <string name="cash">Pay with cash</string>
     <string name="complete">Complete</string>
     <string name="receipt">Print Receipt</string>
+    <string name="email_receipt">Email Receipt</string>
     <string name="select_bluetooth_device">Select bluetooth device</string>
     <string name="terminal_selection_hint">Please select an outPOSt device based on its serial number and ensure it is turned on.</string>
     <string name="cancel">Cancel</string>
@@ -15,4 +16,11 @@
     <string name="job_service">Payment Successfull</string>
     <string name="job_running">job_running</string>
     <string name="msg_no_notes">No record!</string>
+    <string name="loading_receipt">Loading receipt...</string>
+    <string name="session_expired">Session expired</string>
+    <string name="select_receipt_format">Select receipt format</string>
+    <string name="enter_valid_email">Enter valid email</string>
+    <string name="sending_receipt">Sending receipt</string>
+    <string name="sending_success">Success</string>
 </resources>
+

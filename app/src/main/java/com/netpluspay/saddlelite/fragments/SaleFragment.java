@@ -3,10 +3,12 @@ package com.netpluspay.saddlelite.fragments;
 import com.netpluspay.saddlelite.R;
 import com.netpluspay.saddlelite.activities.PaymentProgressActivity;
 
+import android.app.AlertDialog;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
@@ -123,7 +125,26 @@ public class SaleFragment extends Fragment {
         if(TextUtils.isEmpty(amount)){
             Toast.makeText(getActivity(), "Please enter amount", Toast.LENGTH_LONG).show();
         }else{
-            proceedToPayment(Double.valueOf(amount));
+            AlertDialog.Builder alertDialogbuilder = new AlertDialog.Builder(getContext());
+            alertDialogbuilder.setTitle("Card transaction");
+            alertDialogbuilder
+                    .setMessage("Do you want to complete card transaction for: " + amount)
+                    .setCancelable(true)
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    })
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            proceedToPayment(Double.valueOf(amount));
+
+                        }
+                    });
+            AlertDialog alertDialog = alertDialogbuilder.create();
+            alertDialog.show();
+            //proceedToPayment(Double.valueOf(amount));
         }
     }
 
@@ -141,42 +162,63 @@ public class SaleFragment extends Fragment {
 
     private void payCash() {
 
-        if (isNetworkConnected()) {
-            new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
-        }
-        else {
-            db.insertCash(orderNo, amount, narrative, email, merchantID, "PENDING");
-            Log.d("Db Size", db.getPendingCash().size() + "");
+        AlertDialog.Builder alertDialogbuilder = new AlertDialog.Builder(getContext());
+        alertDialogbuilder.setTitle("Cash transaction");
+        alertDialogbuilder
+                .setMessage("Do you want to complete cash transaction for: " + amount)
+                .setCancelable(true)
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
 
-            SharedPreferences preferences = PreferenceManager.
-                    getDefaultSharedPreferences(getActivity());
+                        if (isNetworkConnected()) {
+                            new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
+                        }
+                        else {
+                            db.insertCash(orderNo, amount, narrative, email, merchantID, "PENDING");
+                            Log.d("Db Size", db.getPendingCash().size() + "");
 
-            if (!preferences.getBoolean("firstRunComplete", false)) {
-                //schedule the job only once.
-                scheduleJobCallEndpoint();
+                            SharedPreferences preferences = PreferenceManager.
+                                    getDefaultSharedPreferences(getActivity());
 
-                //update shared preference
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putBoolean("firstRunComplete", true);
-                editor.commit();
-            }
+                            if (!preferences.getBoolean("firstRunComplete", false)) {
+                                //schedule the job only once.
+                                scheduleJobCallEndpoint();
 
-            if (!preferences.getBoolean("secondRunComplete", false)) {
-                //schedule the job only once.
-                schedulePendingJobCallEndpoint();
+                                //update shared preference
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putBoolean("firstRunComplete", true);
+                                editor.commit();
+                            }
 
-                //update shared preference
-                SharedPreferences.Editor editor2 = preferences.edit();
-                editor2.putBoolean("secondRunComplete", true);
-                editor2.commit();
-            }
+                            if (!preferences.getBoolean("secondRunComplete", false)) {
+                                //schedule the job only once.
+                                schedulePendingJobCallEndpoint();
 
-            Intent intent = new Intent();
-            intent.putExtra("status", "SUCCESS");
-            intent.putExtra("transactionId", orderNo);
-            intent.putExtra("amount", amount);
-            passData(intent, -1);
-        }
+                                //update shared preference
+                                SharedPreferences.Editor editor2 = preferences.edit();
+                                editor2.putBoolean("secondRunComplete", true);
+                                editor2.commit();
+                            }
+
+                            Intent intent = new Intent();
+                            intent.putExtra("status", "SUCCESS");
+                            intent.putExtra("transactionId", orderNo);
+                            intent.putExtra("amount", amount);
+                            passData(intent, -1);
+                        }
+
+                    }
+                });
+        AlertDialog alertDialog = alertDialogbuilder.create();
+        alertDialog.show();
+
+
     }
 
     private void scheduleJobCallEndpoint(){
@@ -322,19 +364,32 @@ public class SaleFragment extends Fragment {
                 try {
 
                         InputStream responseBody = myConnection.getInputStream();
+                        //Log.d("Response body", responseBody.toString());
                         InputStreamReader responseBodyReader =
                                 new InputStreamReader(responseBody, "UTF-8");
                         JsonReader jsonReader = new JsonReader(responseBodyReader);
                         jsonReader.beginObject(); // Start processing the JSON object
-
+                        Log.d("Json", jsonReader.toString());
                         while (jsonReader.hasNext()) { // Loop through all keys
                             String key = jsonReader.nextName(); // Fetch the next key
+                            if (key.equalsIgnoreCase("status_code")) { // Check if desired key
+                                // Fetch the value as a String
+                                //String value = jsonReader.nextString();
+                                // Error handling code goes here
+                                result = 2;
+                                intent.putExtra("status", "FAILED");
+                                intent.putExtra("transactionId", order);
+                                intent.putExtra("amount", amount);
+                                //intent.putExtra("exception", value);
+                                //db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
+                                break; // Break out of the loop
+                            }
                             if (key.equalsIgnoreCase("error")) { // Check if desired key
                                 // Fetch the value as a String
                                 //String value = jsonReader.nextString();
                                 // Error handling code goes here
                                 result = 1;
-                                intent.putExtra("status", "Failed");
+                                intent.putExtra("status", "FAILED");
                                 intent.putExtra("transactionId", order);
                                 intent.putExtra("amount", amount);
                                 //intent.putExtra("exception", value);
@@ -346,13 +401,13 @@ public class SaleFragment extends Fragment {
                                 String value = jsonReader.nextString();
                                 if(value.equalsIgnoreCase("FAILED")){
                                     result = 1;
-                                    intent.putExtra("status", "Failed");
+                                    intent.putExtra("status", "FAILED");
                                     intent.putExtra("transactionId", order);
                                     intent.putExtra("amount", amount);
                                    // db.insertCash(order, amount, narrative, email, merchantID, "PENDING");
                                     break; // Break out of the loop
                                 }
-                                intent.putExtra("status", value);
+                                intent.putExtra("status", "SUCCESS");
                                 continue; // Break out of the loop
                             }
                             else if (key.equalsIgnoreCase("orderid")) { // Check if desired key
@@ -402,9 +457,15 @@ public class SaleFragment extends Fragment {
             cashBtn.setVisibility(View.VISIBLE);
             payBtn.setVisibility(View.VISIBLE);
             if (result == -1) {
-                passData(intent, -1);
+
                 db.insertCash(orderNo, amount, narrative, email, merchantID, "SUCCESS");
                 logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "SUCCESS", 0);
+                logTransactionOnServer.logCashTransaction();
+                passData(intent, -1);
+            }
+            else if (result == 2){
+                db.insertCash(orderNo, amount, narrative, email, merchantID, "FAILED");
+                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "FAILED", 0);
                 logTransactionOnServer.logCashTransaction();
             }
             else

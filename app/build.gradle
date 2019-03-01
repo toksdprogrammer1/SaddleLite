@@ -28,20 +28,40 @@ android {
         }
     }
 
+    dexOptions {
+        jumboMode true
+    }
+
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
+    compile('com.mikepenz:materialdrawer:4.3.7@aar') {
+        transitive = true
+    }
     compile 'com.android.support:appcompat-v7:27.0.2'
     compile 'com.android.support:design:27.0.2'
     compile 'com.jakewharton:butterknife:7.0.1'
-    compile('com.mikepenz:materialdrawer:5.0.0@aar') {
-        transitive = true
-    }
+
     compile 'com.android.support:recyclerview-v7:27.0.2'
-    compile('com.smartpesa:sdk:3.2.9') {
+
+    //compile('com.smartpesa:sdk:3.2.9') {
+     //   transitive = true
+    //    changing = true
+    //}
+    compile('com.smartpesa:sdk:4.0.0') {
         transitive = true
         changing = true
     }
+    compile 'javax.annotation:javax.annotation-api:1.2'
+    compile "com.google.dagger:dagger-android:2.12"
+    compile "com.google.dagger:dagger-android-support:2.12"
+    annotationProcessor "com.google.dagger:dagger-compiler:2.12"
+    //apt "com.google.dagger:dagger-android-processor:2.12"
+    //apt "com.google.dagger:dagger-compiler:2.12"
+    compile('com.github.afollestad.material-dialogs:core:0.8.5.7@aar') {
+        transitive = true
+    }
+
 }

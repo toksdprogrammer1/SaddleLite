@@ -45,8 +45,8 @@ public class LogTransactionOnServer {
     }
 
     public void logCashTransaction(){
-        Log.d("Email", login);
-        Log.d("Password", pasword);
+        //Log.d("Email", login);
+        //Log.d("Password", pasword);
         new CallToGetTokenTask(type).execute(login, pasword);
 
     }
@@ -245,7 +245,7 @@ public class LogTransactionOnServer {
                 //myConnection.connect();
                 JSONObject jsonParam = new JSONObject();
                 jsonParam.put("transaction_id", orderNo);
-                jsonParam.put("amount", Integer.parseInt(amount));
+                jsonParam.put("amount", amount);
                 jsonParam.put("status", status);
 
                 DataOutputStream os = new DataOutputStream(myConnection.getOutputStream());

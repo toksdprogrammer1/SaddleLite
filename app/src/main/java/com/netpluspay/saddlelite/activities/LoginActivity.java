@@ -15,7 +15,7 @@ import android.widget.Toast;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import smartpesa.sdk.ServiceManager;
-import smartpesa.sdk.error.SpException;
+import smartpesa.sdk.core.error.SpException;
 import smartpesa.sdk.error.SpSessionException;
 import smartpesa.sdk.models.merchant.VerifiedMerchantInfo;
 import smartpesa.sdk.models.merchant.VerifyMerchantCallback;
