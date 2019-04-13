@@ -370,12 +370,14 @@ public class SaleFragment extends Fragment {
                         JsonReader jsonReader = new JsonReader(responseBodyReader);
                         jsonReader.beginObject(); // Start processing the JSON object
                         Log.d("Json", jsonReader.toString());
+
                         while (jsonReader.hasNext()) { // Loop through all keys
                             String key = jsonReader.nextName(); // Fetch the next key
                             if (key.equalsIgnoreCase("status_code")) { // Check if desired key
                                 // Fetch the value as a String
                                 //String value = jsonReader.nextString();
                                 // Error handling code goes here
+                                Log.d("resp", jsonReader.nextString());
                                 result = 2;
                                 intent.putExtra("status", "FAILED");
                                 intent.putExtra("transactionId", order);

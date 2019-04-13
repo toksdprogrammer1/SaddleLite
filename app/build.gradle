@@ -19,12 +19,26 @@ android {
     }
 
     repositories {
-        maven { url "https://bitbucket.org/smartpesa/smartpesa-maven/raw/master" }
-        maven { url "https://bitbucket.org/smartpesa/maven/raw/master" }
         maven { url "https://jitpack.io" }
-        maven {                                  // <-- Add this
-            url 'https://maven.google.com/'
-            name 'Google'
+        maven {
+            url "https://bitbucket.org/smartpesa/smartpesa-maven/raw/master"
+            credentials {
+                username "kunbiNetplus"
+                password "netplusadvisory"
+            }
+            authentication{
+                basic(BasicAuthentication)
+            }
+        }
+        maven {
+            url "https://bitbucket.org/smartpesa/maven/raw/master"
+            credentials {
+                username "kunbiNetplus"
+                password "netplusadvisory"
+            }
+            authentication{
+                basic(BasicAuthentication)
+            }
         }
     }
 

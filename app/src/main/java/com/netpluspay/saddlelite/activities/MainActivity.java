@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements SaleFragment.OnDa
     private void showLoginActivity() {
         //startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         //finish();
-        performVerifyMerchant("webmall", "100", "1234");
+        performVerifyMerchant("SEVENUP", "100", "1000");
     }
 
     private void performVerifyMerchant(String merchantCode, String operatorCode, String operatorPin) {

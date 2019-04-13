@@ -31,6 +31,7 @@ import android.widget.TextView;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -531,6 +532,20 @@ public class PaymentProgressActivity extends AppCompatActivity {
                 mServiceManager.scanPrinter(new PrinterScanningCallback() {
                     @Override
                     public void onDeviceListRefresh(Collection<SpPrinterDevice> collection) {
+
+                        Log.d("No of Printer", collection.size()+"");
+                            if (collection.size() > 1) {
+
+                                displayPrinterDevice(collection);
+                            }
+                            else {
+
+                                for (SpPrinterDevice device : collection) {
+                                    Log.d("Printer name", device.getName());
+                                    performPrint(device);
+                                }
+
+                            }
                         //if (isActivityDestroyed()) return;
 
 //                        if (!listDisplayed[0]) {
@@ -558,7 +573,7 @@ public class PaymentProgressActivity extends AppCompatActivity {
 //                        } //else if (!processCalled[0]) {
 //                        //    displayPrinterDevice(collection);
 //                      //  }
-                        displayPrinterDevice(collection);
+                       // displayPrinterDevice(collection);
                     }
 
                     @Override
