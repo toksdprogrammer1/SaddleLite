@@ -33,8 +33,8 @@ android {
         maven {
             url "https://bitbucket.org/smartpesa/maven/raw/master"
             credentials {
-                username "smartpesa-sdk"
-                password "YcV58I6ISr%A"
+                username "kunbiNetplus"
+                password "netplusadvisory"
             }
             authentication{
                 basic(BasicAuthentication)
