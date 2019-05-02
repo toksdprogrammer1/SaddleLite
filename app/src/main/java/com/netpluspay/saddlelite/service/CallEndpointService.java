@@ -29,9 +29,15 @@ import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 public class CallEndpointService extends JobService {
 
@@ -54,8 +60,9 @@ public class CallEndpointService extends JobService {
 
         for (Cash cash : db.getPendingCash()){
             Log.d("about to send", cash.getId() + " " + cash.getAmount());
-            new connectNetplusEndpointTask(this, cash).execute(cash.getOrderNo(), cash.getAmount(),
-                    cash.getNarrative(), cash.getEmail(), cash.getMerchantId());
+            //new connectNetplusEndpointTask(this, cash).execute(cash.getOrderNo(), cash.getAmount(),
+             //       cash.getNarrative(), cash.getEmail(), cash.getMerchantId());
+            new CallToGetTokenTask(this, cash).execute(getEmail(), getPassword());
         }
 
        // if (allSuccessfull) {
@@ -122,6 +129,281 @@ public class CallEndpointService extends JobService {
         return preferences.getString("password", "");
 
     }
+
+    public static SSLContext sc () throws Exception{
+
+        // Create a trust manager that does not validate certificate chains
+        TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+        }
+        };
+
+        // Install the all-trusting trust manager
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+
+        return sc;
+    }
+
+    public static HostnameVerifier allHostsValid (){
+
+        // Create all-trusting host name verifier
+        HostnameVerifier allHostsValid = new HostnameVerifier() {
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        };
+
+        return allHostsValid;
+    }
+
+    private class CallToGetTokenTask extends AsyncTask<String,Void,String> {
+
+        Context context;
+        Cash cash;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        public CallToGetTokenTask(Context context, Cash cash){
+            this.context= context;
+            this.cash = cash;
+        }
+
+        /*
+            doInBackground(Params... params)
+                Override this method to perform a computation on a background thread.
+         */
+
+        protected String doInBackground(String...param) {
+
+            String token ="";
+            String login = param[0];
+            String pasword = param[1];
+
+            Log.d("Calling", "To get token");
+            Log.d("Email", login);
+            Log.d("Password", pasword);
+            try {
+                // Create URL
+                URL endpoint = new URL("https://saddleng.com/api/auth");
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc().getSocketFactory());
+                HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid());
+                HttpsURLConnection myConnection =
+                        (HttpsURLConnection) endpoint.openConnection();
+                myConnection.setRequestMethod("POST");
+                myConnection.setUseCaches(false);
+                myConnection.setDoOutput(true);
+                myConnection.setConnectTimeout(10000);
+                myConnection.setReadTimeout(10000);
+                //myConnection.setRequestProperty("Accept",
+                //        "application/json");
+                myConnection.setRequestProperty("Content-Type",
+                        "application/json");
+                //myConnection.connect();
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("login", login);
+                jsonParam.put("password", pasword);
+
+                DataOutputStream os = new DataOutputStream(myConnection.getOutputStream());
+                //os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
+                os.writeBytes(jsonParam.toString());
+                os.flush();
+                os.close();
+                try {
+                    Log.d("STATUS", String.valueOf(myConnection.getResponseCode()));
+                    Log.d("MSG", myConnection.getResponseMessage());
+                } catch (Exception e) {
+                    Log.d("Endpoint Error", e.getMessage());
+                }
+                try {
+
+                    InputStream responseBody = myConnection.getInputStream();
+
+                    InputStreamReader responseBodyReader =
+                            new InputStreamReader(responseBody, "UTF-8");
+
+                    JsonReader jsonReader = new JsonReader(responseBodyReader);
+                    //Log.d("BodyReader", jsonReader.toString());
+                    jsonReader.beginObject(); // Start processing the JSON object
+                    int count =0;
+                    while (jsonReader.hasNext()) { // Loop through all keys
+                        Log.d("Key", jsonReader.nextName());
+                        token = jsonReader.nextString();
+                        if (count == 3){
+                            break;
+                        }
+                        //Log.d("Key", jsonReader.nextName());
+                        //Log.d("Value", jsonReader.nextString());
+                        //String key = jsonReader.nextName(); // Fetch the next key
+
+                        //if (key.equalsIgnoreCase("token")) { // Check if desired key
+                        //    token = jsonReader.nextString();
+                        //    break; // Break out of the loop
+                        // }
+
+                    }
+                    jsonReader.close();
+                    myConnection.disconnect();
+
+
+                } catch (Exception e) {
+                    //e.printStackTrace();
+                    Log.d("Error", e.getMessage());
+
+                }
+            } catch (Exception e) { // Catch the download exception
+                e.printStackTrace();
+            }
+            return token;
+        }
+
+
+        /*
+            onPostExecute(Result result)
+                Runs on the UI thread after doInBackground(Params...).
+         */
+        @Override
+        protected void onPostExecute(String token){
+
+            Log.d("Token", token);
+            new LogCashTransaction(context, cash).execute(token);
+            //
+        }
+    }
+
+    private class LogCashTransaction extends AsyncTask<String,Void,String> {
+
+
+        Context context;
+        Cash cash;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        public LogCashTransaction(Context context, Cash cash){
+            this.context= context;
+            this.cash = cash;
+        }
+
+
+        /*
+            doInBackground(Params... params)
+                Override this method to perform a computation on a background thread.
+         */
+
+        protected String doInBackground(String...param) {
+
+            String response = "";
+            String token = param[0];
+            Log.d("Token2", "Bearer " + token);
+            Log.d("OrderNo", cash.getOrderNo());
+            Log.d("Amount", cash.getAmount());
+            Log.d("status", cash.getStatus());
+            Log.d("Connecting", "LogCashTransaction");
+            try {
+                // Create URL
+                URL endpoint = new URL("https://saddleng.com/api/v2/logSaddleLiteCashTransaction");
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc().getSocketFactory());
+                HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid());
+                HttpsURLConnection myConnection =
+                        (HttpsURLConnection) endpoint.openConnection();
+                myConnection.setRequestMethod("POST");
+                myConnection.setUseCaches(false);
+                myConnection.setDoInput(true);
+                myConnection.setDoOutput(true);
+                //myConnection.setConnectTimeout(10000);
+                //myConnection.setReadTimeout(10000);
+                myConnection.setRequestProperty("Authorization",
+                        "Bearer " + token);
+                myConnection.setRequestProperty("Content-Type",
+                        "application/json");
+                myConnection.setRequestProperty("Accept",
+                        "application/json");
+                //myConnection.connect();
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("transaction_id", cash.getOrderNo());
+                jsonParam.put("amount", cash.getAmount());
+                jsonParam.put("status", cash.getStatus());
+
+                DataOutputStream os = new DataOutputStream(myConnection.getOutputStream());
+                //os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
+                os.writeBytes(jsonParam.toString());
+                os.flush();
+                os.close();
+                try {
+                    response = String.valueOf(myConnection.getResponseCode());
+                    Log.d("STATUS", String.valueOf(myConnection.getResponseCode()));
+                    Log.d("MSG", myConnection.getResponseMessage());
+                } catch (Exception e) {
+                    Log.d("Endpoint Error", e.getMessage());
+                }
+                try {
+
+                    InputStream responseBody = myConnection.getInputStream();
+                    InputStreamReader responseBodyReader =
+                            new InputStreamReader(responseBody, "UTF-8");
+                    JsonReader jsonReader = new JsonReader(responseBodyReader);
+                    jsonReader.beginObject(); // Start processing the JSON object
+
+                    while (jsonReader.hasNext()) { // Loop through all keys
+                        Log.d("Name", jsonReader.nextName());
+                        Log.d("msg", jsonReader.nextString());
+                        /*String key = jsonReader.nextName(); // Fetch the next key
+                        if (key.equalsIgnoreCase("status")) { // Check if desired key
+                            Log.i("status", jsonReader.nextString());
+                            break; // Break out of the loop
+                        }*/
+
+                    }
+                    jsonReader.close();
+                    myConnection.disconnect();
+
+
+                } catch (Exception e) {
+                    //e.printStackTrace();
+                    Log.d("Error", e.getMessage());
+
+                }
+            } catch (Exception e) { // Catch the download exception
+                e.printStackTrace();
+            }
+            return response;
+        }
+
+
+        /*
+            onPostExecute(Result result)
+                Runs on the UI thread after doInBackground(Params...).
+         */
+        @Override
+        protected void onPostExecute(String response){
+
+            if (!response.equalsIgnoreCase("200") || !response.equalsIgnoreCase("201")){
+
+                Log.d("FALED", "Unable to Logged to the server");
+            }
+            else{
+                cash.setStatus("SUCCESS");
+                db.updateCash(cash);
+                Log.d("Completed", "Logged to the server");
+            }
+
+
+        }
+    }
+
+
 
     private class connectNetplusEndpointTask extends AsyncTask<String,Void,String> {
 
@@ -249,17 +531,17 @@ public class CallEndpointService extends JobService {
             if (status.equalsIgnoreCase("SUCCESS")){
                 cash.setStatus("SUCCESS");
                 db.updateCash(cash);
-                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "SUCCESS", 0);
+                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "SUCCESS", 0, getApplicationContext());
                 logTransactionOnServer.logCashTransaction();
             }
             else if (status.equalsIgnoreCase("UNKNOWN")){
                 cash.setStatus("FAILED");
                 db.updateCash(cash);
-                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "FAILED", 0);
+                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "FAILED", 0, getApplicationContext());
                 logTransactionOnServer.logCashTransaction();
             }
             else {
-                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "FAILED", 0);
+                logTransactionOnServer = new LogTransactionOnServer(getEmail(),getPassword(), cash.getOrderNo(), cash.getAmount(), "FAILED", 0, getApplicationContext());
                 logTransactionOnServer.logCashTransaction();
             }
             //Set up the notification content intent to launch the app when clicked

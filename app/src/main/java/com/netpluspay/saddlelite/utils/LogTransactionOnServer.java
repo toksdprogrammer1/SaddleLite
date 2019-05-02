@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.netpluspay.saddlelite.R;
 import com.netpluspay.saddlelite.database.model.Cash;
+import com.netpluspay.saddlelite.database.DatabaseHelper;
 import org.json.JSONObject;
 
 import java.io.DataOutputStream;
@@ -32,8 +33,9 @@ public class LogTransactionOnServer {
     public String status;
     public String token;
     public int type;
+    private DatabaseHelper db;
 
-    public LogTransactionOnServer(String login, String password, String orderNo, String amount, String status, int type) {
+    public LogTransactionOnServer(String login, String password, String orderNo, String amount, String status, int type, Context context) {
         this.login = login;
         this.pasword = password;
         this.orderNo = orderNo;
@@ -41,7 +43,7 @@ public class LogTransactionOnServer {
         this.status = status;
         this.token = "";
         this.type = type;
-
+        db = new DatabaseHelper(context);
     }
 
     public void logCashTransaction(){
@@ -195,11 +197,11 @@ public class LogTransactionOnServer {
         protected void onPostExecute(String token){
 
             Log.d("Token", token);
-            if (type == 0){
-                new LogCashTransaction().execute(token);
+            if (type == 1){
+                new LogCardTransaction().execute(token);
             }
             else
-                new LogCardTransaction().execute(token);
+                new LogCashTransaction().execute(token);
             //
         }
     }
@@ -224,6 +226,7 @@ public class LogTransactionOnServer {
 
         protected String doInBackground(String...param) {
 
+            String response ="";
             String token = param[0];
             Log.d("Connecting", "LogCardTransaction");
             try {
@@ -254,6 +257,7 @@ public class LogTransactionOnServer {
                 os.flush();
                 os.close();
                 try {
+                    response = String.valueOf(myConnection.getResponseCode());
                     Log.d("STATUS", String.valueOf(myConnection.getResponseCode()));
                     Log.d("MSG", myConnection.getResponseMessage());
                 } catch (Exception e) {
@@ -289,7 +293,7 @@ public class LogTransactionOnServer {
             } catch (Exception e) { // Catch the download exception
                 e.printStackTrace();
             }
-            return token;
+            return response;
         }
 
 
@@ -298,9 +302,14 @@ public class LogTransactionOnServer {
                 Runs on the UI thread after doInBackground(Params...).
          */
         @Override
-        protected void onPostExecute(String token){
+        protected void onPostExecute(String response){
 
-            Log.d("Completed", "Logged to the server");
+            if (!response.equalsIgnoreCase("200") || !response.equalsIgnoreCase("201")){
+                db.insertCash(orderNo, amount, "", "", "", "PENDING");
+                Log.d("FALED", "Unable to Logged to the server");
+            }
+            else
+                Log.d("Completed", "Logged to the server");
 
         }
     }
@@ -326,6 +335,7 @@ public class LogTransactionOnServer {
 
         protected String doInBackground(String...param) {
 
+            String response = "";
             String token = param[0];
             Log.d("Token2", "Bearer " + token);
             Log.d("OrderNo", orderNo);
@@ -363,6 +373,7 @@ public class LogTransactionOnServer {
                 os.flush();
                 os.close();
                 try {
+                    response = String.valueOf(myConnection.getResponseCode());
                     Log.d("STATUS", String.valueOf(myConnection.getResponseCode()));
                     Log.d("MSG", myConnection.getResponseMessage());
                 } catch (Exception e) {
@@ -398,7 +409,7 @@ public class LogTransactionOnServer {
             } catch (Exception e) { // Catch the download exception
                 e.printStackTrace();
             }
-            return token;
+            return response;
         }
 
 
@@ -407,9 +418,14 @@ public class LogTransactionOnServer {
                 Runs on the UI thread after doInBackground(Params...).
          */
         @Override
-        protected void onPostExecute(String token){
+        protected void onPostExecute(String response){
 
-            Log.d("Completed", "Logged to the server");
+            if (!response.equalsIgnoreCase("200") || !response.equalsIgnoreCase("201")){
+                db.insertCash(orderNo, amount, "", "", "", "PENDING");
+                Log.d("FALED", "Unable to Logged to the server");
+            }
+            else
+                Log.d("Completed", "Logged to the server");
 
         }
     }

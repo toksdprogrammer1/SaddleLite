@@ -177,7 +177,9 @@ public class SaleFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int which) {
 
                         if (isNetworkConnected()) {
-                            new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
+                            new LogTransactionOnServer(email,password, orderNo, amount, "PENDING", 0, getActivity()).logCashTransaction();
+
+                            //new connectNetplusEndpointTask().execute(orderNo, amount, narrative, email, merchantID);
                         }
                         else {
                             db.insertCash(orderNo, amount, narrative, email, merchantID, "PENDING");
@@ -206,12 +208,13 @@ public class SaleFragment extends Fragment {
                                 editor2.commit();
                             }
 
-                            Intent intent = new Intent();
-                            intent.putExtra("status", "SUCCESS");
-                            intent.putExtra("transactionId", orderNo);
-                            intent.putExtra("amount", amount);
-                            passData(intent, -1);
+
                         }
+                        Intent intent = new Intent();
+                        intent.putExtra("status", "SUCCESS");
+                        intent.putExtra("transactionId", orderNo);
+                        intent.putExtra("amount", amount);
+                        passData(intent, -1);
 
                     }
                 });
@@ -461,13 +464,13 @@ public class SaleFragment extends Fragment {
             if (result == -1) {
 
                 db.insertCash(orderNo, amount, narrative, email, merchantID, "SUCCESS");
-                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "SUCCESS", 0);
+                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "SUCCESS", 0, getActivity());
                 logTransactionOnServer.logCashTransaction();
                 passData(intent, -1);
             }
             else if (result == 2){
                 db.insertCash(orderNo, amount, narrative, email, merchantID, "FAILED");
-                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "FAILED", 0);
+                logTransactionOnServer = new LogTransactionOnServer(email,password, orderNo, amount, "FAILED", 0, getActivity());
                 logTransactionOnServer.logCashTransaction();
             }
             else

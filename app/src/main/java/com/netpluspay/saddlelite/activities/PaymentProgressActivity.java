@@ -300,7 +300,7 @@ public class PaymentProgressActivity extends AppCompatActivity {
                 transaction = transaction2.getTransaction();
                 //exception = exception2;
                 transactionFinished = 1;
-                logTransactionOnServer = new LogTransactionOnServer(email, password, orderNo, amount + "", "SUCCESS", 1);
+                logTransactionOnServer = new LogTransactionOnServer(email, password, orderNo, amount + "", "SUCCESS", 1, getBaseContext());
                 logTransactionOnServer.logCashTransaction();
                 progressTv.setText("Transaction success");
                 receiptBtn.setVisibility(View.VISIBLE);
@@ -388,7 +388,7 @@ public class PaymentProgressActivity extends AppCompatActivity {
                 }
                 else{
                     progressTv.setText(exception.getMessage());
-                    logTransactionOnServer = new LogTransactionOnServer(email, password, orderNo, amount + "", "FAILED", 1);
+                    logTransactionOnServer = new LogTransactionOnServer(email, password, orderNo, amount + "", "FAILED", 1, getBaseContext());
                     logTransactionOnServer.logCashTransaction();
                 }
                 backBtn.setOnClickListener(new View.OnClickListener() {
